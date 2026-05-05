@@ -1,0 +1,122 @@
+{
+  "adversarial_distribution": {
+    "bucket_scores": {
+      "arithmetic": {
+        "accuracy": 1.0,
+        "passed": 100,
+        "total": 100
+      },
+      "finite": {
+        "accuracy": 1.0,
+        "passed": 100,
+        "total": 100
+      },
+      "magic": {
+        "accuracy": 1.0,
+        "passed": 100,
+        "total": 100
+      },
+      "retrieval": {
+        "accuracy": 1.0,
+        "passed": 100,
+        "total": 100
+      },
+      "unsupported": {
+        "accuracy": 1.0,
+        "passed": 100,
+        "total": 100
+      },
+      "word_color_pairs": {
+        "accuracy": 1.0,
+        "passed": 100,
+        "total": 100
+      }
+    },
+    "end_to_end_symbolic_accuracy": 1.0,
+    "failure_count": 0,
+    "failures": [],
+    "router_accuracy": 1.0
+  },
+  "architecture": {
+    "answer": "selected symbolic operator output",
+    "expanded": "Context-Accent Radix Language",
+    "inference": "CPU integer bit operations",
+    "input": "raw bytes",
+    "name": "CARL",
+    "substrate": "byte bit masks and recurrent local byte-convolution features",
+    "weights": "binarized per-operator class bitsets"
+  },
+  "author_and_rights_owner": "Alexis Eleanor Fagan",
+  "benchmark": "CARL all-in-one binarized-weight CPU stress test",
+  "copyright": "Copyright (c) 2026 Alexis Eleanor Fagan. All rights reserved.",
+  "opaque_random_bytes": {
+    "accuracy": 1.0,
+    "failures": [],
+    "passed": 600,
+    "total": 600
+  },
+  "summary": {
+    "absolute_certainty": false,
+    "adversarial_n": 600,
+    "all_possible_tasks_claim": "impossible_to_prove_or_satisfy_with_finite_resources",
+    "dim_bits": 32768,
+    "fit_sec": 3.5465373929991983,
+    "opaque_n": 600,
+    "overall_accuracy": 1.0,
+    "overall_failure_count": 0,
+    "overall_passed": 2400,
+    "overall_total": 2400,
+    "test_n": 1200,
+    "top_k_weight_bits_per_class": 768,
+    "total_elapsed_sec": 7.770566741000039,
+    "train_n": 3000
+  },
+  "test_distribution": {
+    "bucket_scores": {
+      "arithmetic": {
+        "accuracy": 1.0,
+        "passed": 200,
+        "total": 200
+      },
+      "finite": {
+        "accuracy": 1.0,
+        "passed": 200,
+        "total": 200
+      },
+      "magic": {
+        "accuracy": 1.0,
+        "passed": 200,
+        "total": 200
+      },
+      "retrieval": {
+        "accuracy": 1.0,
+        "passed": 200,
+        "total": 200
+      },
+      "unsupported": {
+        "accuracy": 1.0,
+        "passed": 200,
+        "total": 200
+      },
+      "word_color_pairs": {
+        "accuracy": 1.0,
+        "passed": 200,
+        "total": 200
+      }
+    },
+    "end_to_end_symbolic_accuracy": 1.0,
+    "failure_count": 0,
+    "failures": [],
+    "router_accuracy": 1.0
+  },
+  "weight_representation": {
+    "float_multiply_in_inference": false,
+    "inference_ops": [
+      "feature hashing",
+      "AND",
+      "bit_count/POPCOUNT",
+      "integer score comparison"
+    ],
+    "type": "binary class prototype bitsets"
+  }
+}

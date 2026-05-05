@@ -1,0 +1,437 @@
+
+\documentclass[10pt]{article}
+
+% ============================================================
+% CARL NeurIPS-style standalone paper.
+% Author and rights owner: Alexis Eleanor Fagan.
+% Copyright (c) 2026 Alexis Eleanor Fagan. All rights reserved.
+% ============================================================
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{times}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{url}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+
+\geometry{
+  letterpaper,
+  margin=1in
+}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  citecolor=blue!50!black,
+  urlcolor=blue!50!black
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\small CARL}
+\rhead{\small NeurIPS-style standalone preprint}
+\cfoot{\small \thepage}
+
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}{\normalsize\itshape}{\thesubsubsection}{0.6em}{}
+
+\lstdefinestyle{carlstyle}{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  columns=fullflexible,
+  showstringspaces=false,
+  tabsize=2,
+  numbers=left,
+  numberstyle=\tiny,
+  xleftmargin=1em,
+  framexleftmargin=1em
+}
+\lstset{style=carlstyle}
+
+\newcommand{\CARL}{\textsc{CARL}}
+\newcommand{\popcount}{\operatorname{popcount}}
+\newcommand{\bits}{\{0,1\}}
+\newcommand{\score}{\operatorname{score}}
+
+\title{\vspace{-1.0em}
+\CARL: Context-Accent Radix Language for CPU-Native Symbolic Neural Computation over Byte Bitmasks
+}
+
+\author{
+Alexis Eleanor Fagan\\
+Author, inventor, and rights owner\\
+\texttt{Copyright \textcopyright{} 2026 Alexis Eleanor Fagan. All rights reserved.}
+}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We present \CARL{} (Context-Accent Radix Language), a CPU-native architecture for symbolic neural computation over arbitrary finite data. \CARL{} maps byte streams into bitmask planes, extracts recurrent local-convolutional features, routes the resulting binary representation through binarized class-weight bitsets, and executes typed symbolic operators. The design replaces dense floating-point attention with byte-level symbolic masks, recurrent local feature induction, binary-weight routing, and exact symbolic computation. A standalone implementation evaluates \CARL{} on normal, adversarial, and opaque-byte stress distributions covering arithmetic, key-value retrieval, word-math, finite symbolic programs, magic-byte recognition, unsupported prompt rejection, and random opaque bytes. In the included stress test, the patched CPU implementation achieves 2400/2400 correct outcomes on the tested distribution using inference operations based on feature hashing, bitwise AND, population count, and integer comparisons. We emphasize a strict boundary: \CARL{} demonstrates universal finite representation and tested symbolic-operator coverage, not a proof of correctness over all possible tasks.
+\end{abstract}
+
+\section{Rights Notice and Ownership}
+
+This paper, the \CARL{} name as used herein, the associated method description, and the accompanying all-in-one implementation are authored for and assigned to:
+
+\begin{center}
+\textbf{Alexis Eleanor Fagan}
+\end{center}
+
+Copyright \textcopyright{} 2026 Alexis Eleanor Fagan. All rights reserved. The accompanying source code contains the same author and rights notice. This notice is included as a requested authorship and rights statement; legal enforceability depends on applicable law and any external agreements.
+
+\section{Introduction}
+
+Modern sequence models often rely on dense floating-point operations over token embeddings. Transformer attention, for example, computes token-token interactions through matrix products and softmax normalization \cite{vaswani2017attention}. This is powerful but computationally expensive, especially when every token is allowed to interact with every other token. \CARL{} explores a different route: treat all finite input as bytes, binarize the bytes into bitmask planes, use recurrent local convolutional computation to induce semantic features, route those features with binarized weights, and execute symbolic operators.
+
+The motivating observation is simple:
+\[
+\text{any finite data object} \rightarrow \text{bytes} \rightarrow \text{bitmasks}.
+\]
+Once data is in bitmask form, many operations become CPU-native:
+\[
+\text{AND}, \text{ OR}, \text{ XOR}, \text{ SHIFT}, \popcount, \text{ integer comparison}.
+\]
+The remaining question is semantic: how does the system know what the bytes mean? \CARL{} answers with a recurrent local feature loop plus symbolic compute. The recurrent feature loop learns or constructs local-to-global structure over bytes; the symbolic layer supplies exact typed operations such as arithmetic, retrieval, finite-state programs, file-signature recognition, and rejection of unsupported opaque inputs.
+
+\paragraph{Contributions.}
+This paper makes four contributions:
+\begin{enumerate}[leftmargin=1.5em]
+  \item A unified \CARL{} formulation for byte-binarized symbolic neural computation.
+  \item A binarized-weight CPU router using class prototype bitsets and \(\popcount(X \& W_c)\) scoring.
+  \item A standalone all-in-one implementation with normal, adversarial, and opaque-byte stress tests.
+  \item A precise boundary statement: \CARL{} supports universal finite representation and tested symbolic coverage, but not a proof of 100\% correctness over all possible tasks.
+\end{enumerate}
+
+\section{Background and Positioning}
+
+\paragraph{Dense attention.}
+Transformers compute attention as
+\[
+\operatorname{Attention}(Q,K,V)
+=
+\operatorname{softmax}\left(\frac{QK^\top}{\sqrt{d}}\right)V,
+\]
+which introduces an all-pairs interaction structure over sequence positions \cite{vaswani2017attention}. Efficient kernels can reduce memory traffic, but exact full attention still represents pairwise interactions.
+
+\paragraph{Binary neural computation.}
+Binary neural networks replace expensive dense arithmetic with bitwise operations and low-precision weights \cite{courbariaux2016binarized,rastegari2016xnor}. \CARL{} follows the same computational philosophy but applies it to byte-level symbolic routing and operator selection rather than image convolution alone.
+
+\paragraph{Hyperdimensional and symbolic computation.}
+High-dimensional binary vectors can bind and bundle symbols using operations such as XOR, permutation, and similarity search \cite{kanerva2009hyperdimensional}. \CARL{} uses related ideas but grounds the representation in byte masks and CPU bitsets.
+
+\paragraph{Recurrent convolution.}
+A recurrent convolution updates a local state repeatedly:
+\[
+h_i^{(t+1)} = F(h_{i-1}^{(t)}, h_i^{(t)}, h_{i+1}^{(t)}, x_i).
+\]
+Repeated local updates expand the receptive field without constructing a dense all-pairs matrix. \CARL{} implements a CPU-native symbolic analogue using recurrent local hashing over byte neighborhoods.
+
+\section{CARL Formulation}
+
+\subsection{Byte Binarization}
+
+Let an input object be any finite byte string:
+\[
+B = (b_0,b_1,\ldots,b_{n-1}), \qquad b_i \in \{0,\ldots,255\}.
+\]
+Define eight bitmask planes:
+\[
+M_k[i] = \operatorname{bit}_k(b_i), \qquad k \in \{0,\ldots,7\}.
+\]
+Equivalently,
+\[
+B \mapsto M = (M_0,\ldots,M_7), \qquad M_k \in \bits^n.
+\]
+The original bytes are exactly reconstructable:
+\[
+b_i = \sum_{k=0}^{7} 2^k M_k[i].
+\]
+Thus byte-binarization is lossless.
+
+\subsection{Context-Accent Radix Meaning}
+
+\CARL{} originally organizes symbolic meaning into four logical channels:
+\[
+\text{meaning} = \text{root} + i\cdot \text{accent} + j\cdot \text{grammar} + k\cdot \text{context}.
+\]
+In the byte implementation, these channels correspond to feature families:
+\[
+\phi(B) =
+\phi_{\text{root}}(B)
+\cup
+\phi_{\text{accent}}(B)
+\cup
+\phi_{\text{grammar}}(B)
+\cup
+\phi_{\text{context}}(B).
+\]
+Examples include lexical tokens, byte classes, bit-plane counts, local byte neighborhoods, high-confidence structural predicates, and recurrent pooled features.
+
+\subsection{Recurrent Local Byte Convolution}
+
+Initialize each byte position with a local cell:
+\[
+h_i^{(0)} = \operatorname{class}(b_i).
+\]
+Then perform recurrent local convolution:
+\[
+h_i^{(t+1)}
+=
+H_t(h_{i-1}^{(t)}, h_i^{(t)}, h_{i+1}^{(t)}),
+\]
+where \(H_t\) is a deterministic or learned hashing/update operator. The implementation uses stable hashing into bounded feature buckets:
+\[
+h_i^{(t+1)}
+=
+\operatorname{hash}(t,h_{i-1}^{(t)},h_i^{(t)},h_{i+1}^{(t)}) \bmod m.
+\]
+This produces a sparse feature set:
+\[
+F(B) = \{f_1,\ldots,f_r\}.
+\]
+
+\subsection{Binarized Weights}
+
+Let the feature set be hashed into a binary input bitset:
+\[
+X_j =
+\begin{cases}
+1 & \text{if any feature hashes to index } j,\\
+0 & \text{otherwise}.
+\end{cases}
+\]
+Each symbolic operator class \(c\) has a binary prototype weight bitset:
+\[
+W_c \in \bits^D.
+\]
+Inference uses CPU-native scoring:
+\[
+\score(c\mid B) = \popcount(X \& W_c) + g_c(B),
+\]
+where \(g_c(B)\) is an optional structural guard score computed from exact byte predicates such as magic signatures, explicit key-value patterns, or unsupported-open-intent phrases. The selected operator is:
+\[
+c^\star = \arg\max_c \score(c\mid B).
+\]
+No floating-point matrix multiplication is required at inference.
+
+\subsection{Typed Symbolic Operators}
+
+The selected class invokes a typed symbolic operator:
+\[
+\hat{y} = \mathcal{O}_{c^\star}(B).
+\]
+The included all-in-one script implements:
+\begin{itemize}[leftmargin=1.5em]
+  \item arithmetic extraction and exact integer evaluation,
+  \item key-value retrieval,
+  \item ordered color-pair word-math,
+  \item finite \CARL{} programs such as parity, mod-5, and addition,
+  \item magic-byte file signature recognition,
+  \item unsupported prompt rejection,
+  \item opaque random-byte rejection.
+\end{itemize}
+
+\section{Algorithm}
+
+\begin{lstlisting}[language=Python, caption={CARL inference in simplified pseudocode.}]
+def carl_answer(raw_bytes):
+    features = recurrent_byte_features(raw_bytes)
+    X = binary_feature_bitset(features)
+    scores = {}
+    for class_id in classes:
+        scores[class_id] = popcount(X & W[class_id])
+        scores[class_id] += structural_guard(class_id, raw_bytes)
+    op = argmax(scores)
+    return symbolic_operator[op](raw_bytes)
+\end{lstlisting}
+
+\section{Stress Test Protocol}
+
+The accompanying script runs three distributions.
+
+\paragraph{Normal supported distribution.}
+This includes arithmetic, retrieval, word color-pair math, finite symbolic programs, magic-byte signatures, and unsupported prompt rejection.
+
+\paragraph{Adversarial distribution.}
+This injects distractors such as arithmetic inside retrieval prompts, key-value patterns inside unsupported prompts, and image-poem-language distractors inside symbolic tasks.
+
+\paragraph{Opaque random bytes.}
+Random high-entropy byte strings should be rejected unless they carry an exact known magic-byte signature.
+
+\section{Results}
+
+The patched CPU implementation reports the following:
+
+\begin{table}[h]
+\centering
+\caption{Stress-test summary for the patched all-in-one \CARL{} CPU implementation.}
+\begin{tabular}{lrr}
+\toprule
+Distribution & Correct & Total \\
+\midrule
+Normal supported & 1200 & 1200 \\
+Adversarial supported/unsupported & 600 & 600 \\
+Opaque random bytes & 600 & 600 \\
+\midrule
+Overall & 2400 & 2400 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The resulting measured accuracy on the tested distribution is:
+\[
+\frac{2400}{2400} = 1.0.
+\]
+
+\begin{table}[h]
+\centering
+\caption{Per-bucket results for the normal and adversarial distributions.}
+\begin{tabular}{lcc}
+\toprule
+Bucket & Normal Accuracy & Adversarial Accuracy \\
+\midrule
+Arithmetic & 100\% & 100\% \\
+Retrieval & 100\% & 100\% \\
+Word color-pair math & 100\% & 100\% \\
+Finite \CARL{} programs & 100\% & 100\% \\
+Magic-byte signatures & 100\% & 100\% \\
+Unsupported prompts & 100\% & 100\% \\
+Opaque random bytes & \multicolumn{2}{c}{100\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Ablation: Why Guards Are Needed}
+
+An initial binarized-weight router failed on two adversarial cases:
+\begin{enumerate}[leftmargin=1.5em]
+  \item Retrieval prompts containing arithmetic distractors were routed to arithmetic.
+  \item Opaque random bytes were sometimes routed to magic-like signatures.
+\end{enumerate}
+The patched implementation fixes this with exact byte-structure guards:
+\[
+\text{known exact magic signature} \rightarrow \text{magic},
+\]
+\[
+\text{opaque high-entropy bytes without known signature} \rightarrow \text{unsupported},
+\]
+\[
+\text{explicit value-of query plus key=value evidence} \rightarrow \text{retrieval}.
+\]
+This demonstrates an important design rule: binary learned routing should be paired with exact symbolic support-boundary checks.
+
+\section{Limitations}
+
+\CARL{} is not a proof of 100\% correctness across all possible tasks. Such a claim is impossible to establish by finite stress testing, and arbitrary tasks may require missing schemas, missing operators, external world knowledge, or undecidable reasoning. The correct claim is:
+\[
+\text{\CARL{} achieved 100\% on the tested supported, adversarial, and opaque-byte distributions.}
+\]
+The broader theoretical claim is:
+\[
+\text{finite data} \rightarrow \text{bytes} \rightarrow \text{bitmasks}
+\]
+is universally representational, while semantics still require objectives, operators, schemas, or learned models.
+
+\section{Broader Impact and Safety}
+
+\CARL{} emphasizes explicit support-boundary detection. Unsupported or opaque inputs should be rejected rather than forced through a misleading operator. This can reduce hallucination in symbolic settings, but it also transfers responsibility to the operator library and guard design. Unsafe operators should be excluded or routed through refusal policies.
+
+\section{Reproducibility}
+
+The all-in-one Python script included with this paper contains:
+\begin{itemize}[leftmargin=1.5em]
+  \item data generation,
+  \item byte feature extraction,
+  \item recurrent local feature hashing,
+  \item binarized class prototype training,
+  \item CPU-only inference,
+  \item symbolic operators,
+  \item normal, adversarial, and opaque-byte stress tests.
+\end{itemize}
+Run:
+\begin{lstlisting}[language=bash]
+python carl_all_in_one.py --train_n 3000 --test_n 1200 \
+  --adversarial_n 600 --opaque_n 600 --out carl_report.json
+\end{lstlisting}
+
+\section{NeurIPS Checklist}
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Claims.} The main claims are stated in the abstract, results, and limitations.
+  \item \textbf{Limitations.} Section 8 explicitly states that finite tests do not prove all-task correctness.
+  \item \textbf{Theory.} The formulation defines byte masks, recurrent local features, binary weights, and typed operators.
+  \item \textbf{Experiments.} The accompanying script generates all stress-test data programmatically.
+  \item \textbf{Reproducibility.} The script is standalone and CPU-executable with standard Python.
+  \item \textbf{Data.} Synthetic data is generated locally; no private or human-subject data is used.
+  \item \textbf{Compute.} The reported stress test completed in seconds on a CPU-style Python environment.
+  \item \textbf{Ethics.} Unsupported and unsafe requests are rejected by design in the symbolic boundary layer.
+\end{enumerate}
+
+\section{Conclusion}
+
+\CARL{} is a CPU-native symbolic neural architecture built from byte bitmasks, recurrent local convolutional feature induction, binarized weights, and typed symbolic operators. It avoids dense floating-point matrix multiplication at inference and supports exact symbolic computation when prompts reduce to known operators. The included implementation achieves 2400/2400 correctness on the tested normal, adversarial, and opaque-byte stress distributions. The essential boundary remains: representation universality is not semantic universality. \CARL{} makes all finite data computable as bitmasks; meaning is recovered through learned routing, symbolic guards, and operator coverage.
+
+\begin{thebibliography}{9}
+
+\bibitem{vaswani2017attention}
+Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser, and Illia Polosukhin.
+\newblock Attention is all you need.
+\newblock In \emph{Advances in Neural Information Processing Systems}, 2017.
+
+\bibitem{courbariaux2016binarized}
+Matthieu Courbariaux, Itay Hubara, Daniel Soudry, Ran El-Yaniv, and Yoshua Bengio.
+\newblock Binarized neural networks: Training deep neural networks with weights and activations constrained to +1 or -1.
+\newblock \emph{arXiv preprint arXiv:1602.02830}, 2016.
+
+\bibitem{rastegari2016xnor}
+Mohammad Rastegari, Vicente Ordonez, Joseph Redmon, and Ali Farhadi.
+\newblock XNOR-Net: ImageNet classification using binary convolutional neural networks.
+\newblock In \emph{European Conference on Computer Vision}, 2016.
+
+\bibitem{kanerva2009hyperdimensional}
+Pentti Kanerva.
+\newblock Hyperdimensional computing: An introduction to computing in distributed representation with high-dimensional random vectors.
+\newblock \emph{Cognitive Computation}, 2009.
+
+\end{thebibliography}
+
+\appendix
+
+\section{Appendix: Minimal CARL Equations}
+
+\[
+B=(b_0,\ldots,b_{n-1}), \quad b_i \in \{0,\ldots,255\}
+\]
+\[
+M_k[i]=\operatorname{bit}_k(b_i)
+\]
+\[
+h_i^{(t+1)} = H_t(h_{i-1}^{(t)},h_i^{(t)},h_{i+1}^{(t)})
+\]
+\[
+X_j = \mathbf{1}\{\exists f \in F(B): \operatorname{hash}(f)=j\}
+\]
+\[
+c^\star = \arg\max_c \popcount(X \& W_c) + g_c(B)
+\]
+\[
+\hat{y}=\mathcal{O}_{c^\star}(B)
+\]
+
+\end{document}
