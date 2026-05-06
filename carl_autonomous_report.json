@@ -1,0 +1,30 @@
+{
+  "accuracy": 1.0,
+  "boundary": "Autonomous local learning and optional live retrieval; not a pretrained frontier model.",
+  "passed": 32,
+  "total": 32,
+  "version": "CARL-Autonomous-Assistant-2.0.0",
+  "local_checks": [
+    "python -m py_compile carl_autonomous.py",
+    "python carl_autonomous.py --selftest --json --report carl_autonomous_report.json",
+    "python carl_autonomous.py --ask 'calculate 12*(7+5)'",
+    "python carl_autonomous.py --ask 'learn rule: 1->3; 2->5; 3->7; query 10'",
+    "python carl_autonomous.py --ask 'index <file>' then ask knowledge from indexed text",
+    "python carl_autonomous.py --ask 'web: current test' verifies opt-in web fallback when network is unavailable"
+  ],
+  "enabled_runtime_systems": [
+    "autonomous persistent SQLite memory",
+    "autonomous local document indexing and retrieval",
+    "optional real-time web retrieval with --enable-web",
+    "web results are stored back into the local knowledge index",
+    "recurrent binarized byte-feature routing",
+    "safe AST arithmetic",
+    "unit and temperature conversion",
+    "extractive summarization",
+    "task extraction",
+    "simple rule induction",
+    "basic statistics",
+    "text transforms",
+    "unsupported-prompt fallback"
+  ]
+}
